@@ -86,7 +86,10 @@ impl Iterator for WordleResultsIterator<'_, '_> {
     }
 }
 
-fn generate_results_for_guess<'a, 'b>(words: &'a Vec<String>, guess: &'b String) -> WordleResultsIterator<'a, 'b> {
+fn generate_results_for_guess<'a, 'b>(
+    words: &'a Vec<String>,
+    guess: &'b String,
+) -> WordleResultsIterator<'a, 'b> {
     WordleResultsIterator {
         index: 0,
         possible_words: words,
@@ -137,31 +140,28 @@ fn filter_words(words: &Vec<String>, facts: &Vec<Fact>) -> Vec<String> {
                         .any(|(i, c)| !used_indices.contains(&i) && c == absent.letter)
                     {
                         word_is_valid = false;
-                        used_indices.push(absent.letter_index);
                         break;
                     }
+                    used_indices.push(absent.letter_index);
                 }
                 Fact::Somewhere(somewhere) => {
-                    if !word
-                        .chars()
-                        .enumerate()
-                        .any(|(i, c)| !used_indices.contains(&i) && c == somewhere.letter)
+                    if !word.contains(somewhere.letter)
                         || somewhere
                             .impossible_positions
                             .iter()
                             .any(|&i| word.chars().nth(i as usize) == Some(somewhere.letter))
                     {
                         word_is_valid = false;
-                        used_indices.push(somewhere.letter_index);
                         break;
                     }
+                    used_indices.push(somewhere.letter_index);
                 }
                 Fact::Right(right) => {
                     if word.chars().nth(right.letter_index) != Some(right.letter) {
                         word_is_valid = false;
-                        used_indices.push(right.letter_index);
                         break;
                     }
+                    used_indices.push(right.letter_index);
                 }
             }
         }
@@ -183,18 +183,21 @@ fn solve_wordle(words: &Vec<String>, wordle: &String) {
             println!("I failed!");
             break;
         }
-        if !possible_words.contains(wordle) {
-            println!("Its not there?!?");
-            break;
-        }
         println!("I have {} words to choose from.", possible_words.len());
         let best_word = find_best_word(&possible_words);
         println!("I guess {}.", best_word);
-        let facts = generate_results_for_guess(&wordle_vec, &best_word).next().expect("No facts found");
+        let facts = generate_results_for_guess(&wordle_vec, &best_word)
+            .next()
+            .expect("No facts found");
         possible_words = filter_words(&possible_words, &facts);
         if best_word == *wordle {
             println!("I found it in {}! It's {}.", attempts, possible_words[0]);
             found_it = true;
+        }
+        if !possible_words.contains(wordle) {
+            println!("Its not there?!?!?!");
+            println!("Facts that ruled it out: {:?}", facts);
+            break;
         }
     }
 }
